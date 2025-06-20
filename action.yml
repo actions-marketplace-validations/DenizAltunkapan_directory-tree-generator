@@ -17,5 +17,5 @@ runs:
   main: "dist/index.js"
 
 branding:
-  icon: "file-directory"
+  icon: "align-justify"
   color: "blue"
