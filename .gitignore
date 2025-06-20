@@ -18,7 +18,6 @@ coverage.*
 *.lcov
 
 # Build output
-dist/
 build/
 lib/
 
