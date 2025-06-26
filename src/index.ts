@@ -10,8 +10,16 @@ function getArgValue(flag: string): string | undefined {
   return undefined;
 }
 
+// Parse CLI flag as boolean (e.g. --show-extensions false)
+function getBooleanFlag(flag: string, defaultValue: boolean): boolean {
+  const value = getArgValue(flag);
+  if (value === undefined) return defaultValue;
+  return value.toLowerCase() === "true";
+}
+
 const scanPathInput = getArgValue("--path") || "src";
 const extInput = getArgValue("--extensions") || ".java";
+const showExtensions = getBooleanFlag("--show-extensions", true);
 
 // Resolve absolute path of the directory to scan
 const absoluteScanPath = path.resolve(process.cwd(), scanPathInput);
@@ -40,7 +48,8 @@ function listFiles(dir: string, prefix = ""): string[] {
       const ext = path.extname(item).toLowerCase();
       if (VALID_EXTENSIONS.length === 0 || VALID_EXTENSIONS.includes(ext)) {
         const relativePath = fullPath.replace(process.cwd() + path.sep, "");
-        output.push(`${prefix}- 📄 [${item}](${relativePath})`);
+        const displayName = showExtensions ? item : path.basename(item, ext);
+        output.push(`${prefix}- 📄 [${displayName}](${relativePath})`);
       }
     }
   }

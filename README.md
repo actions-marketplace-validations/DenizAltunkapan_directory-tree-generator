@@ -10,10 +10,11 @@ Perfect for documentation, open source projects, and maintaining clean, readable
 
 ## ✨ Features
 
-* 🔍 Recursively scans any specified directory
-* 🔗 Generates a Markdown-based tree with clickable links
-* 🔧 Filters files by extension (e.g., `.ts`, `.js`)
-* 📁 Outputs a `DIRECTORY.md` file at the root of the project
+- 🔍 Recursively scans any specified directory
+- 🔗 Generates a Markdown-based tree with clickable links
+- 🔧 Filters files by extension (e.g. `.ts`, `.js`)
+- 🎛️ **Optionally hides or shows file extensions** via `--show-extensions`
+- 📁 Outputs a `DIRECTORY.md` file at the root of the project
 
 ---
 
@@ -38,40 +39,50 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Directory Tree Generator
-        uses: DenizAltunkapan/directory-tree-generator@v1
+        uses: DenizAltunkapan/directory-tree-generator@v1.1.0
         with:
           path: src
           extensions: .ts,.js
+          show-extensions: false # hide “.ts” / “.js” in DIRECTORY.md
 ```
+
 ---
 
 ## ⚙️ Input Parameters
 
-| Parameter    | Description                                                                             | Default |
-| ------------ | --------------------------------------------------------------------------------------- | ------- |
-| `path`       | Relative path of the directory to scan                                                  | `src`   |
-| `extensions` | Comma-separated list of file extensions (e.g., `.ts,.js`). Use `.` to include all files | `.`     |
+| Parameter         | Description                                                                                | Default |
+| ----------------- | ------------------------------------------------------------------------------------------ | ------- |
+| `path`            | Relative path of the directory to scan                                                     | `src`   |
+| `extensions`      | Comma-separated list of file extensions (e.g. `.ts,.js`). Use `.` to include **all** files | `.`     |
+| `show-extensions` | `true` → keep extensions (e.g. `Main.java`), `false` → hide them (e.g. `Main`)             | `true`  |
 
 ---
 
 ## 📄 Example Output
 
+_With `show-extensions: false`_:
+
 - 📁 **src**
-  - 📄 [index.ts](src/index.ts)
+  - 📄 [index](src/index.ts)
   - 📁 **utils**
-    - 📄 [helpers.ts](src/utils/helpers.ts)  
-...
+    - 📄 [helpers](src/utils/helpers.ts)
+      …
+
 ---
 
 ## 🛠 Local Usage (Optional)
 
-To run the generator locally:
-
 ```bash
 npm install
 npm run build
-node dist/index.js --path src --extensions .ts,.js
+
+# Show extensions (default)
+node dist/index.js --path src --extensions .ts,.js --show-extensions true
+
+# Hide extensions
+node dist/index.js --path src --extensions .ts,.js --show-extensions false
 ```
+
 ---
 
 ## 🙌 Contributing
