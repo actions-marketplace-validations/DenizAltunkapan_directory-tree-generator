@@ -82,9 +82,16 @@ function getInputOrArg(key, cliFlag, fallback) {
 }
 function getBooleanInputOrArg(key, cliFlag, fallback) {
   if (core && core.getInput(key)) {
-    return core.getInput(key).toLowerCase() === "true";
+    return parseBoolean(core.getInput(key), fallback);
   }
   return getBooleanArg(cliFlag, fallback);
+}
+function parseBoolean(value, defaultValue) {
+  if (!value) return defaultValue;
+  const val = value.trim().toLowerCase();
+  if (val === "true") return true;
+  if (val === "false") return false;
+  return defaultValue;
 }
 // ---------- Config ----------
 const scanPathInput = getInputOrArg("path", "--path", "src");
@@ -92,7 +99,7 @@ const extInput = getInputOrArg("extensions", "--extensions", ".");
 const showExtensions = getBooleanInputOrArg(
   "show-extensions",
   "--show-extensions",
-  true,
+  false,
 );
 const absoluteScanPath = path.resolve(process.cwd(), scanPathInput);
 let VALID_EXTENSIONS = [];

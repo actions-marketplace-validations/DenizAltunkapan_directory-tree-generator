@@ -54,7 +54,7 @@ jobs:
 | ----------------- | ------------------------------------------------------------------------------------------ | ------- |
 | `path`            | Relative path of the directory to scan                                                     | `src`   |
 | `extensions`      | Comma-separated list of file extensions (e.g. `.ts,.js`). Use `.` to include **all** files | `.`     |
-| `show-extensions` | `true` → keep extensions (e.g. `Main.java`), `false` → hide them (e.g. `Main`)             | `true`  |
+| `show-extensions` | `true` → keep extensions (e.g. `Main.java`), `false` → hide them (e.g. `Main`)             | `false` |
 
 ---
 
@@ -76,7 +76,7 @@ _With `show-extensions: false`_:
 npm install
 npm run build
 
-# Show extensions (default)
+# Show extensions
 node dist/index.js --path src --extensions .ts,.js --show-extensions true
 
 # Hide extensions

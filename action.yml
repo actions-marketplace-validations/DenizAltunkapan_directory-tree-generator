@@ -14,9 +14,9 @@ inputs:
     default: "."
 
   show-extensions:
-    description: "Whether to display file extensions in DIRECTORY.md (true or false, default: true)"
+    description: "Whether to display file extensions in DIRECTORY.md (true or false, default: false)"
     required: false
-    default: "true"
+    default: "false"
 
 runs:
   using: "node20"
