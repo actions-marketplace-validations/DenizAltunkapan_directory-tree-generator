@@ -1,40 +1,66 @@
 import * as fs from "fs";
 import * as path from "path";
 
-// Parse CLI argument value by flag, e.g. --path or --extensions
+let core: typeof import("@actions/core") | null = null;
+try {
+  core = require("@actions/core");
+} catch {
+  // Not running in GitHub Actions, ignore
+}
+
+// ---------- Argument Parsers ----------
+
 function getArgValue(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
-  if (index !== -1 && process.argv.length > index + 1) {
-    return process.argv[index + 1];
-  }
-  return undefined;
+  return index !== -1 && index + 1 < process.argv.length
+    ? process.argv[index + 1]
+    : undefined;
 }
 
-// Parse CLI flag as boolean (e.g. --show-extensions false)
-function getBooleanFlag(flag: string, defaultValue: boolean): boolean {
+function getBooleanArg(flag: string, defaultValue: boolean): boolean {
   const value = getArgValue(flag);
-  if (value === undefined) return defaultValue;
-  return value.toLowerCase() === "true";
+  return value === undefined ? defaultValue : value.toLowerCase() === "true";
 }
 
-const scanPathInput = getArgValue("--path") || "src";
-const extInput = getArgValue("--extensions") || ".java";
-const showExtensions = getBooleanFlag("--show-extensions", true);
+function getInputOrArg(key: string, cliFlag: string, fallback: string): string {
+  if (core && core.getInput(key)) return core.getInput(key);
+  const arg = getArgValue(cliFlag);
+  return arg !== undefined ? arg : fallback;
+}
 
-// Resolve absolute path of the directory to scan
+function getBooleanInputOrArg(
+  key: string,
+  cliFlag: string,
+  fallback: boolean,
+): boolean {
+  if (core && core.getInput(key)) {
+    return core.getInput(key).toLowerCase() === "true";
+  }
+  return getBooleanArg(cliFlag, fallback);
+}
+
+// ---------- Config ----------
+const scanPathInput = getInputOrArg("path", "--path", "src");
+const extInput = getInputOrArg("extensions", "--extensions", ".");
+const showExtensions = getBooleanInputOrArg(
+  "show-extensions",
+  "--show-extensions",
+  true,
+);
+
 const absoluteScanPath = path.resolve(process.cwd(), scanPathInput);
 
 let VALID_EXTENSIONS: string[] = [];
-
 if (extInput.trim() === ".") {
-  VALID_EXTENSIONS = []; // empty means accept all files
+  VALID_EXTENSIONS = []; // Accept all files
 } else {
   VALID_EXTENSIONS = extInput.split(",").map((e) => e.trim().toLowerCase());
 }
 
-// Recursively list directory contents with markdown formatting
+// ---------- Tree Generator ----------
+
 function listFiles(dir: string, prefix = ""): string[] {
-  let output: string[] = [];
+  const output: string[] = [];
   const items = fs.readdirSync(dir);
 
   for (const item of items) {
@@ -47,7 +73,7 @@ function listFiles(dir: string, prefix = ""): string[] {
     } else {
       const ext = path.extname(item).toLowerCase();
       if (VALID_EXTENSIONS.length === 0 || VALID_EXTENSIONS.includes(ext)) {
-        const relativePath = fullPath.replace(process.cwd() + path.sep, "");
+        const relativePath = path.relative(process.cwd(), fullPath);
         const displayName = showExtensions ? item : path.basename(item, ext);
         output.push(`${prefix}- 📄 [${displayName}](${relativePath})`);
       }
@@ -57,26 +83,25 @@ function listFiles(dir: string, prefix = ""): string[] {
   return output;
 }
 
+// ---------- Execution ----------
+
 try {
   if (
     !fs.existsSync(absoluteScanPath) ||
     !fs.statSync(absoluteScanPath).isDirectory()
   ) {
-    console.error(
+    throw new Error(
       `Path "${absoluteScanPath}" does not exist or is not a directory.`,
     );
-    process.exit(1);
   }
 
   const tree = listFiles(absoluteScanPath);
-
-  // Write DIRECTORY.md to the parent folder of the scan directory
   const outputPath = path.join(path.dirname(absoluteScanPath), "DIRECTORY.md");
-
   fs.writeFileSync(outputPath, ["# Project Structure", "", ...tree].join("\n"));
 
   console.log(`✅ DIRECTORY.md generated at ${outputPath}`);
-} catch (error) {
-  console.error("Error generating DIRECTORY.md:", error);
+} catch (err) {
+  console.error("❌ Error:", err);
+  if (core) core.setFailed((err as Error).message);
   process.exit(1);
 }
