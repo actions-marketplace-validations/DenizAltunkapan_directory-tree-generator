@@ -6,7 +6,7 @@ inputs:
   path:
     description: "Relative path of the directory to scan (default: src)"
     required: false
-    default: "src"
+    default: "."
 
   extensions:
     description: 'Comma-separated list of file extensions to include (e.g., .ts,.js). Use "." to include all files. (default: all files)'

@@ -51,7 +51,7 @@ function parseBoolean(
 }
 
 // ---------- Config ----------
-const scanPathInput = getInputOrArg("path", "--path", "src");
+const scanPathInput = getInputOrArg("path", "--path", ".");
 const extInput = getInputOrArg("extensions", "--extensions", ".");
 const showExtensions = getBooleanInputOrArg(
   "show-extensions",
@@ -107,7 +107,7 @@ try {
   }
 
   const tree = listFiles(absoluteScanPath);
-  const outputPath = path.join(path.dirname(absoluteScanPath), "DIRECTORY.md");
+  const outputPath = path.join(process.cwd(), "DIRECTORY.md");
   fs.writeFileSync(outputPath, ["# Project Structure", "", ...tree].join("\n"));
 
   console.log(`✅ DIRECTORY.md generated at ${outputPath}`);
