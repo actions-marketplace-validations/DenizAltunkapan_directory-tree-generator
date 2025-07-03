@@ -23,7 +23,10 @@ function getBooleanArg(flag: string, defaultValue: boolean): boolean {
 }
 
 function getInputOrArg(key: string, cliFlag: string, fallback: string): string {
-  if (core && core.getInput(key)) return core.getInput(key);
+  if (core) {
+    const input = core.getInput(key);
+    if (input !== "") return input;
+  }
   const arg = getArgValue(cliFlag);
   return arg !== undefined ? arg : fallback;
 }
@@ -33,8 +36,9 @@ function getBooleanInputOrArg(
   cliFlag: string,
   fallback: boolean,
 ): boolean {
-  if (core && core.getInput(key)) {
-    return parseBoolean(core.getInput(key), fallback);
+  if (core) {
+    const input = core.getInput(key);
+    if (input !== "") return parseBoolean(input, fallback);
   }
   return getBooleanArg(cliFlag, fallback);
 }
@@ -65,7 +69,10 @@ let VALID_EXTENSIONS: string[] = [];
 if (extInput.trim() === ".") {
   VALID_EXTENSIONS = []; // Accept all files
 } else {
-  VALID_EXTENSIONS = extInput.split(",").map((e) => e.trim().toLowerCase());
+  VALID_EXTENSIONS = extInput
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .map((ext) => (ext.startsWith(".") ? ext : "." + ext));
 }
 
 // ---------- Tree Generator ----------
