@@ -10,11 +10,11 @@ Perfect for documentation, open source projects, and maintaining clean, readable
 
 ## ✨ Features
 
-- 🔍 Recursively scans any specified directory
-- 🔗 Generates a Markdown-based tree with clickable links
+- 🔍 Recursively scans any specified directory (or multiple, comma-separated directories)
+- 🔗 Generates a Markdown-based tree with clickable relative links
 - 🔧 Filters files by extension (e.g. `.ts`, `.js`)
-- 🎛️ **Optionally hides or shows file extensions** via `--show-extensions`
-- 📁 Outputs a `DIRECTORY.md` file at the root of the project
+- 🎛️ Optionally hides or shows file extensions (`--show-extensions`)
+- 📁 Outputs a `DIRECTORY.md` file at the project root
 
 ---
 
@@ -28,7 +28,7 @@ name: Generate Directory Markdown
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -41,18 +41,16 @@ jobs:
       - name: Run Directory Tree Generator
         uses: DenizAltunkapan/directory-tree-generator@v1.1.0
         with:
-          path: src
+          path: frontend,backend
           extensions: .ts,.js
-          show-extensions: false # hide “.ts” / “.js” in DIRECTORY.md
+          show-extensions: false
 ```
-
----
 
 ## ⚙️ Input Parameters
 
 | Parameter         | Description                                                                                | Default |
 | ----------------- | ------------------------------------------------------------------------------------------ | ------- |
-| `path`            | Relative path of the directory to scan                                                     | `src`   |
+| `path`            | Relative path or multiple comma-separated paths of the directories to scan                 | `.`     |
 | `extensions`      | Comma-separated list of file extensions (e.g. `.ts,.js`). Use `.` to include **all** files | `.`     |
 | `show-extensions` | `true` → keep extensions (e.g. `Main.java`), `false` → hide them (e.g. `Main`)             | `false` |
 
@@ -62,29 +60,37 @@ jobs:
 
 _With `show-extensions: false`_:
 
-- 📁 **src**
-  - 📄 [index](src/index.ts)
-  - 📁 **utils**
-    - 📄 [helpers](src/utils/helpers.ts)
-      …
+- 📁 **frontend**
+  - 📄 [index](frontend/index.ts)
+  - 📁 **components**
+    - 📄 [App](frontend/components/App.ts)
+
+- 📁 **backend**
+  - 📁 **src**
+    - 📄 [server](backend/src/server.js)
 
 ---
 
 ## 🛠 Local Usage (Optional)
 
+You can also use this tool locally in any Node.js environment:
+
 ```bash
 npm install
 npm run build
 
-# Show extensions
-node dist/index.js --path src --extensions .ts,.js --show-extensions true
+# Example 1: Show extensions
+node dist/index.js --path frontend,backend --extensions .ts,.js --show-extensions true
 
-# Hide extensions
-node dist/index.js --path src --extensions .ts,.js --show-extensions false
+# Example 2: Hide extensions
+node dist/index.js --path src --extensions .ts --show-extensions false
 ```
+
+The output `DIRECTORY.md` will be created in the project root.
 
 ---
 
 ## 🙌 Contributing
 
-Pull requests are welcome! Feel free to open issues for bugs or feature requests.
+Pull requests are welcome!
+Feel free to open issues for bugs, enhancements, or feature requests.

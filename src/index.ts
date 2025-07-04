@@ -4,9 +4,7 @@ import * as path from "path";
 let core: typeof import("@actions/core") | null = null;
 try {
   core = require("@actions/core");
-} catch {
-  // Not running in GitHub Actions, ignore
-}
+} catch {}
 
 // ---------- Argument Parsers ----------
 
@@ -56,6 +54,10 @@ function parseBoolean(
 
 // ---------- Config ----------
 const scanPathInput = getInputOrArg("path", "--path", ".");
+const scanPaths = scanPathInput
+  .split(",")
+  .map((p) => p.trim())
+  .filter((p) => p !== "");
 const extInput = getInputOrArg("extensions", "--extensions", ".");
 const showExtensions = getBooleanInputOrArg(
   "show-extensions",
@@ -63,11 +65,9 @@ const showExtensions = getBooleanInputOrArg(
   false,
 );
 
-const absoluteScanPath = path.resolve(process.cwd(), scanPathInput);
-
 let VALID_EXTENSIONS: string[] = [];
 if (extInput.trim() === ".") {
-  VALID_EXTENSIONS = []; // Accept all files
+  VALID_EXTENSIONS = [];
 } else {
   VALID_EXTENSIONS = extInput
     .split(",")
@@ -78,7 +78,7 @@ if (extInput.trim() === ".") {
 // ---------- Tree Generator ----------
 
 function listFiles(dir: string, prefix = ""): string[] {
-  const output: string[] = [];
+  const localEntries: string[] = [];
   const items = fs.readdirSync(dir);
 
   for (const item of items) {
@@ -86,37 +86,46 @@ function listFiles(dir: string, prefix = ""): string[] {
     const stat = fs.statSync(fullPath);
 
     if (stat.isDirectory()) {
-      output.push(`${prefix}- 📁 **${item}**`);
-      output.push(...listFiles(fullPath, prefix + "  "));
+      const subTree = listFiles(fullPath, prefix + "  ");
+      if (subTree.length > 0) {
+        localEntries.push(`${prefix}- 📁 **${item}**`);
+        localEntries.push(...subTree);
+      }
     } else {
       const ext = path.extname(item).toLowerCase();
       if (VALID_EXTENSIONS.length === 0 || VALID_EXTENSIONS.includes(ext)) {
         const relativePath = path.relative(process.cwd(), fullPath);
         const displayName = showExtensions ? item : path.basename(item, ext);
-        output.push(`${prefix}- 📄 [${displayName}](${relativePath})`);
+        localEntries.push(`${prefix}- 📄 [${displayName}](${relativePath})`);
       }
     }
   }
 
-  return output;
+  return localEntries;
 }
 
 // ---------- Execution ----------
 
 try {
-  if (
-    !fs.existsSync(absoluteScanPath) ||
-    !fs.statSync(absoluteScanPath).isDirectory()
-  ) {
-    throw new Error(
-      `Path "${absoluteScanPath}" does not exist or is not a directory.`,
-    );
+  const markdown: string[] = ["# Project Structure", ""];
+  for (const relPath of scanPaths) {
+    const absPath = path.resolve(process.cwd(), relPath);
+    if (!fs.existsSync(absPath) || !fs.statSync(absPath).isDirectory()) {
+      console.warn(`⚠️  Skipping invalid directory: ${relPath}`);
+      continue;
+    }
+    const tree = listFiles(absPath);
+    if (tree.length > 0) {
+      markdown.push(`## ${relPath}`, "", ...tree, "");
+    }
   }
 
-  const tree = listFiles(absoluteScanPath);
-  const outputPath = path.join(process.cwd(), "DIRECTORY.md");
-  fs.writeFileSync(outputPath, ["# Project Structure", "", ...tree].join("\n"));
+  if (markdown.length <= 2) {
+    throw new Error("No valid files found in provided paths.");
+  }
 
+  const outputPath = path.join(process.cwd(), "DIRECTORY.md");
+  fs.writeFileSync(outputPath, markdown.join("\n"));
   console.log(`✅ DIRECTORY.md generated at ${outputPath}`);
 } catch (err) {
   console.error("❌ Error:", err);

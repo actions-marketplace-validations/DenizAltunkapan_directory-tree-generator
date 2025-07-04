@@ -61,9 +61,7 @@ const path = __importStar(require("path"));
 let core = null;
 try {
   core = require("@actions/core");
-} catch {
-  // Not running in GitHub Actions, ignore
-}
+} catch {}
 // ---------- Argument Parsers ----------
 function getArgValue(flag) {
   const index = process.argv.indexOf(flag);
@@ -99,16 +97,19 @@ function parseBoolean(value, defaultValue) {
 }
 // ---------- Config ----------
 const scanPathInput = getInputOrArg("path", "--path", ".");
+const scanPaths = scanPathInput
+  .split(",")
+  .map((p) => p.trim())
+  .filter((p) => p !== "");
 const extInput = getInputOrArg("extensions", "--extensions", ".");
 const showExtensions = getBooleanInputOrArg(
   "show-extensions",
   "--show-extensions",
   false,
 );
-const absoluteScanPath = path.resolve(process.cwd(), scanPathInput);
 let VALID_EXTENSIONS = [];
 if (extInput.trim() === ".") {
-  VALID_EXTENSIONS = []; // Accept all files
+  VALID_EXTENSIONS = [];
 } else {
   VALID_EXTENSIONS = extInput
     .split(",")
@@ -117,38 +118,47 @@ if (extInput.trim() === ".") {
 }
 // ---------- Tree Generator ----------
 function listFiles(dir, prefix = "") {
-  const output = [];
+  const localEntries = [];
   const items = fs.readdirSync(dir);
   for (const item of items) {
     const fullPath = path.join(dir, item);
     const stat = fs.statSync(fullPath);
     if (stat.isDirectory()) {
-      output.push(`${prefix}- 📁 **${item}**`);
-      output.push(...listFiles(fullPath, prefix + "  "));
+      const subTree = listFiles(fullPath, prefix + "  ");
+      if (subTree.length > 0) {
+        localEntries.push(`${prefix}- 📁 **${item}**`);
+        localEntries.push(...subTree);
+      }
     } else {
       const ext = path.extname(item).toLowerCase();
       if (VALID_EXTENSIONS.length === 0 || VALID_EXTENSIONS.includes(ext)) {
         const relativePath = path.relative(process.cwd(), fullPath);
         const displayName = showExtensions ? item : path.basename(item, ext);
-        output.push(`${prefix}- 📄 [${displayName}](${relativePath})`);
+        localEntries.push(`${prefix}- 📄 [${displayName}](${relativePath})`);
       }
     }
   }
-  return output;
+  return localEntries;
 }
 // ---------- Execution ----------
 try {
-  if (
-    !fs.existsSync(absoluteScanPath) ||
-    !fs.statSync(absoluteScanPath).isDirectory()
-  ) {
-    throw new Error(
-      `Path "${absoluteScanPath}" does not exist or is not a directory.`,
-    );
+  const markdown = ["# Project Structure", ""];
+  for (const relPath of scanPaths) {
+    const absPath = path.resolve(process.cwd(), relPath);
+    if (!fs.existsSync(absPath) || !fs.statSync(absPath).isDirectory()) {
+      console.warn(`⚠️  Skipping invalid directory: ${relPath}`);
+      continue;
+    }
+    const tree = listFiles(absPath);
+    if (tree.length > 0) {
+      markdown.push(`## ${relPath}`, "", ...tree, "");
+    }
   }
-  const tree = listFiles(absoluteScanPath);
+  if (markdown.length <= 2) {
+    throw new Error("No valid files found in provided paths.");
+  }
   const outputPath = path.join(process.cwd(), "DIRECTORY.md");
-  fs.writeFileSync(outputPath, ["# Project Structure", "", ...tree].join("\n"));
+  fs.writeFileSync(outputPath, markdown.join("\n"));
   console.log(`✅ DIRECTORY.md generated at ${outputPath}`);
 } catch (err) {
   console.error("❌ Error:", err);

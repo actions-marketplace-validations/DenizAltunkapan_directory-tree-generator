@@ -4,7 +4,7 @@ author: Deniz Altunkapan
 
 inputs:
   path:
-    description: "Relative path of the directory to scan (default: src)"
+    description: "Relative path of the directory to scan (default: .). Multiple paths can be comma-separated."
     required: false
     default: "."
 
