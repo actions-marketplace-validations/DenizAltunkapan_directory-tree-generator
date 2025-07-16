@@ -1,27 +1,27 @@
 name: Directory Tree Generator
-description: Generates a markdown file (DIRECTORY.md) representing the directory structure of a specified path within a repository.
+description: Generates a markdown file (DIRECTORY.md) representing the directory structure of specified paths within a repository.
 author: Deniz Altunkapan
 
 inputs:
   path:
-    description: "Relative path of the directory to scan (default: .). Multiple paths can be comma-separated."
+    description: 'Relative path(s) of the directory to scan (default: "."). Multiple paths can be comma-separated.'
     required: false
-    default: "."
+    default: '.'
 
   extensions:
     description: 'Comma-separated list of file extensions to include (e.g., .ts,.js). Use "." to include all files. (default: all files)'
     required: false
-    default: "."
+    default: '.'
 
   show-extensions:
-    description: "Whether to display file extensions in DIRECTORY.md (true or false, default: false)"
+    description: 'Whether to display file extensions in DIRECTORY.md (true or false, default: false)'
     required: false
-    default: "false"
+    default: 'false'
 
 runs:
-  using: "node20"
-  main: "dist/index.js"
+  using: node20
+  main: dist/index.js
 
 branding:
-  icon: "align-justify"
-  color: "blue"
+  icon: align-justify
+  color: blue
