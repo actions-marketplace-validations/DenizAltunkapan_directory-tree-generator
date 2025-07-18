@@ -1,12 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as core from "@actions/core";
 
-let core: typeof import("@actions/core") | null = null;
-try {
-  core = require("@actions/core");
-} catch {}
-
-// ---------- Argument Parsers ----------
+const IS_ACTION = !!process.env.GITHUB_ACTIONS;
 
 function getArgValue(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
@@ -15,13 +11,8 @@ function getArgValue(flag: string): string | undefined {
     : undefined;
 }
 
-function getBooleanArg(flag: string, defaultValue: boolean): boolean {
-  const value = getArgValue(flag);
-  return value === undefined ? defaultValue : value.toLowerCase() === "true";
-}
-
-function getInputOrArg(key: string, cliFlag: string, fallback: string): string {
-  if (core) {
+function getInput(key: string, cliFlag: string, fallback: string): string {
+  if (IS_ACTION) {
     const input = core.getInput(key);
     if (input !== "") return input;
   }
@@ -29,53 +20,34 @@ function getInputOrArg(key: string, cliFlag: string, fallback: string): string {
   return arg !== undefined ? arg : fallback;
 }
 
-function getBooleanInputOrArg(
+function getBooleanInput(
   key: string,
   cliFlag: string,
   fallback: boolean,
 ): boolean {
-  if (core) {
-    const input = core.getInput(key);
-    if (input !== "") return parseBoolean(input, fallback);
-  }
-  return getBooleanArg(cliFlag, fallback);
+  const value = getInput(key, cliFlag, fallback.toString());
+  return value.toLowerCase() === "true";
 }
 
-function parseBoolean(
-  value: string | undefined,
-  defaultValue: boolean,
-): boolean {
-  if (!value) return defaultValue;
-  const val = value.trim().toLowerCase();
-  if (val === "true") return true;
-  if (val === "false") return false;
-  return defaultValue;
-}
-
-// ---------- Config ----------
-const scanPathInput = getInputOrArg("path", "--path", ".");
-const scanPaths = scanPathInput
+const scanPaths = getInput("path", "--path", ".")
   .split(",")
   .map((p) => p.trim())
   .filter((p) => p !== "");
-const extInput = getInputOrArg("extensions", "--extensions", ".");
-const showExtensions = getBooleanInputOrArg(
+
+const extInput = getInput("extensions", "--extensions", ".");
+const showExtensions = getBooleanInput(
   "show-extensions",
   "--show-extensions",
   false,
 );
 
-let VALID_EXTENSIONS: string[] = [];
-if (extInput.trim() === ".") {
-  VALID_EXTENSIONS = [];
-} else {
-  VALID_EXTENSIONS = extInput
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .map((ext) => (ext.startsWith(".") ? ext : "." + ext));
-}
-
-// ---------- Tree Generator ----------
+const VALID_EXTENSIONS =
+  extInput.trim() === "."
+    ? []
+    : extInput
+        .split(",")
+        .map((e) => e.trim().toLowerCase())
+        .map((ext) => (ext.startsWith(".") ? ext : `.${ext}`));
 
 function listFiles(dir: string, prefix = ""): string[] {
   const localEntries: string[] = [];
@@ -94,7 +66,9 @@ function listFiles(dir: string, prefix = ""): string[] {
     } else {
       const ext = path.extname(item).toLowerCase();
       if (VALID_EXTENSIONS.length === 0 || VALID_EXTENSIONS.includes(ext)) {
-        const relativePath = path.relative(process.cwd(), fullPath);
+        const relativePath = path
+          .relative(process.cwd(), fullPath)
+          .replace(/\\/g, "/");
         const displayName = showExtensions ? item : path.basename(item, ext);
         localEntries.push(`${prefix}- 📄 [${displayName}](${relativePath})`);
       }
@@ -104,31 +78,29 @@ function listFiles(dir: string, prefix = ""): string[] {
   return localEntries;
 }
 
-// ---------- Execution ----------
-
 try {
   const markdown: string[] = ["# Project Structure", ""];
+
   for (const relPath of scanPaths) {
     const absPath = path.resolve(process.cwd(), relPath);
-    if (!fs.existsSync(absPath) || !fs.statSync(absPath).isDirectory()) {
-      console.warn(`⚠️  Skipping invalid directory: ${relPath}`);
-      continue;
-    }
+    if (!fs.existsSync(absPath)) continue;
+    if (!fs.statSync(absPath).isDirectory()) continue;
+
     const tree = listFiles(absPath);
     if (tree.length > 0) {
       markdown.push(`## ${relPath}`, "", ...tree, "");
     }
   }
 
-  if (markdown.length <= 2) {
-    throw new Error("No valid files found in provided paths.");
+  if (markdown.length > 2) {
+    const outputPath = path.join(process.cwd(), "DIRECTORY.md");
+    fs.writeFileSync(outputPath, markdown.join("\n"));
+    console.log(`✅ DIRECTORY.md generated at ${outputPath}`);
+  } else if (IS_ACTION) {
+    core.setFailed("No valid files found in provided paths.");
   }
-
-  const outputPath = path.join(process.cwd(), "DIRECTORY.md");
-  fs.writeFileSync(outputPath, markdown.join("\n"));
-  console.log(`✅ DIRECTORY.md generated at ${outputPath}`);
 } catch (err) {
   console.error("❌ Error:", err);
-  if (core) core.setFailed((err as Error).message);
+  if (IS_ACTION) core.setFailed((err as Error).message);
   process.exit(1);
 }

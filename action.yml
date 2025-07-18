@@ -6,17 +6,17 @@ inputs:
   path:
     description: 'Relative path(s) of the directory to scan (default: "."). Multiple paths can be comma-separated.'
     required: false
-    default: '.'
+    default: "."
 
   extensions:
     description: 'Comma-separated list of file extensions to include (e.g., .ts,.js). Use "." to include all files. (default: all files)'
     required: false
-    default: '.'
+    default: "."
 
   show-extensions:
-    description: 'Whether to display file extensions in DIRECTORY.md (true or false, default: false)'
+    description: "Whether to display file extensions in DIRECTORY.md (true or false, default: false)"
     required: false
-    default: 'false'
+    default: "false"
 
 runs:
   using: node20
