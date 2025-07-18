@@ -1,22 +1,28 @@
 {
   "name": "directory-generator",
-  "version": "1.1",
-  "main": "index.js",
+  "version": "2.0.1",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
-    "start": "ts-node src/index.ts"
+    "build": "ncc build src/index.ts -o dist --minify --source-map",
+    "start": "ts-node src/index.ts",
+    "test": "node dist/index.js --path . --extensions .ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "github-actions",
+    "directory",
+    "documentation"
+  ],
+  "author": "Deniz Altunkapan",
+  "license": "MIT",
+  "description": "GitHub Action to generate directory tree markdown documentation",
   "devDependencies": {
-    "@types/node": "^24.0.7",
+    "@types/node": "^20.0.0",
+    "@vercel/ncc": "^0.36.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@actions/core": "^1.11.1"
+    "@actions/core": "^1.11.1",
+    "@actions/github": "^6.0.1"
   }
 }
